@@ -29,7 +29,7 @@ class Player(Turtle):
         self.setheading(90)
         self.shape("turtle")
         self.bullets = []
-        self.blocks = []
+        self.score = 0
         self.alive = is_alive
         self.st()
         screen.onkeypress(self.turn_left, left_key)
@@ -39,6 +39,8 @@ class Player(Turtle):
     def fire(self):
         if len(self.bullets) < 5:
             self.bullets.append(Bullet(self))
+            for bullet in self.bullets:
+                bullet.move()
 
     def turn_left(self):
         self.left(10)
@@ -54,36 +56,51 @@ class Block(Turtle):
         self.penup()
         self.color(color)
         self.shape("square")
+        self.health = 3
+        self.goto(x, y)
+        self.st()
+    
+    def hit(self):
+        self.health -= 1
+        if self.health == 2:
+            self.color("orange")
+        if self.health == 1:
+            self.color("red")
+        if self.health == 0:
+            self.remove()
+
+    def remove(self):
+        global grid
+        if self in grid:
+            self.ht()
+            grid.remove(self)
+
+class Bomb(Turtle):
+    def __init__(self, x, y):
+        super().__init__()
+        self.ht()
+        self.speed(0)
+        self.penup()
+        self.goto(x, y)
+        self.color("black")
+        self.shape("square")
+        self.health = 1
         self.st()
 
-    def grid(self):
-        for i in range(200, -10, -20): #y-axis
-            for j in range(-150, 160, 20): #x-axis
-                if len(blocks)%3==0:
-                    blocks.append(block(x, y, "pink"))
-                elif len(blocks)%3==1:
-                    blocks.append(block(x, y, "yellow"))
-                elif len(blocks)%3==2:
-                    blocks.append(block(x, y, "turquiose"))
-
-# class Bomb(Turtle):
-#     def __init__(self, x, y, blocks):
-#         super().__init__()
-#         self.ht()
-#         self.speed(0)
-#         self.penup()
-#         self.color("black")
-#         self.shape("square")
-#         self.st()
-
-    # def hit(self):
-    #     for i in range(y, y+4): #ex) 6, 10 (stops 1 early)
-    #         for j in range(y, y+4):
-    #             blocks.remove(blocks(j, x))
-
-
-
-
+    def hit(self):
+        to_remove = []
+        for block in grid:
+            if (block != self) and (self.distance(block) < 25):
+                to_remove.append(block)
+        for block in to_remove:
+            block.remove()
+        self.remove()
+    
+    def remove(self):
+        global grid
+        if self in grid:
+            self.ht()
+            grid.remove(self)
 
 class Bullet(Turtle):
     def __init__(self, player):
@@ -102,47 +119,64 @@ class Bullet(Turtle):
         self.forward(10)
         if self.xcor() > 140 or self.xcor() < -140:
             self.setheading(180 - self.heading())
-        if self.ycor() > 190 or self.ycor() < -190:
+        if self.ycor() < -190:
             self.setheading(-self.heading())
+        if self.ycor() > 190: 
+            self.die()
 
     def die(self):
+        if self in self.player.bullets:
+            self.ht()
+            self.player.bullets.remove(self)
+
+
+class Score(Turtle):
+    def __init__(self, player, player_color):
+        super().__init__()
         self.ht()
-        self.player.bullets.remove(self)
+        self.penup()
+        if player_color == "light blue":
+            self.goto(300, 0)
+        if player_color == "dark blue":
+            self.goto(-300, 0)
+        self.color(player_color)
+        yertle.speed(0)
+        yertle.write(f"{str(player_score)}", font=("Arial", 15, "normal"))
 
 
-# class Score(Turtle):
-#     def __init__(Etc.):
-#         super().__init__()
 
+def update():
+    global p1, p2, grid
 
+    start = time.time()
 
+    if time.time()-start > 2:
+        start = time.time()
 
+    for bullet in p1.bullets:
+        bullet.move()
+        for block in grid:
+            #need to add bombs
+            if bullet.distance(block) < 20 and block.color != "black":
+                block.hit()
+                if block.health == 0:
+                    block.remove()
+                bullet.die()
+            if block.color == "black" and bullet.distance(block) < 20:
+                block.hit()
 
-# def update():
-#   global p1, p2
-#   if player.alive:
-#     for i in range(len(body)-1, 0, -1):
-#       body[i].move(body[i-1])
-#     player.move()   
-#     for j in range(3, len(body)):
-#       if player.distance(body[j]) < 20:
-#         player.die()
-#     if player.distance(apple) < 30:
-#       apple.relocate()
-#       body.append(Segment(body[-1]))
-#   else:
-#     for k in range(1, len(body)):
-#       body[k].ht()
-#     apple.ht() 
-#     yertle = Turtle()
-#     yertle.ht()
-#     yertle.penup()
-#     yertle.goto(-125, -25)
-#     yertle.color("red")
-#     yertle.speed(0)
-#     yertle.write("You died", font=("Arial", 50, "normal"))
+    for bullet in p2.bullets:
+        bullet.move()
+        for block in grid:
+            if bullet.distance(block) < 20 and block.color != "black":
+                block.hit()
+                if block.health == 0:
+                    block.remove()
+                bullet.die()
+            if block.color == "black" and bullet.distance(block) < 20:
+                block.hit()
 
-#   screen.ontimer(update, 120)
+    screen.ontimer(update, 120)
 
 ### PROGRAM ###
 screen = Screen()
@@ -156,22 +190,46 @@ playing_area()
 
 p1 = Player(-75, -150, "light blue", "light blue", screen, "d", "a", "w", True)
 p2 = Player(75, -150, "dark blue", "dark blue", screen, "l", "j", "i", True)
-blocks = []
+grid = []
 
-# while p1.alive == True and p2.alive == True:
-#     screen.update()
+screen.tracer(0)
+
+for y in range(190, 140, -20): #y-axis
+    for x in range(-140, 150, 20): #x-axis
+        if random.randint(1, 10) > 8:
+            grid.append(Bomb(x, y))
+        elif len(grid)%4==0:
+            grid.append(Block(x, y, "pink"))
+        elif len(grid)%4==1:
+            grid.append(Block(x, y, "yellow"))
+        elif len(grid)%4==2:
+            grid.append(Block(x, y, "light green"))
+        elif len(grid)%4==3:
+            grid.append(Block(x, y, "aqua"))
+
+
+screen.tracer(1)
+
+screen.update()
     
-#     for bullet in p1.bullets:
-#         bullet.move()
-        
-#         for block in blocks:
-#             if bullet.distance(block) < 20:
-#                 block.ht()
-#                 blocks.remove(block)
-#                 bullet.ht()
-#                 if bullet in p1.bullets:
-#                     p1.bullets.remove(bullet)
-#                 break
+#"press space to start"
+# yertle = Turtle()
+# yertle.ht()
+# yertle.penup()
+# yertle.goto(-125, -25)
+# yertle.color("green")
+# yertle.speed(0)
+# yertle.write("Press", font=("Arial", 50, "normal"))
 
+
+#death
+
+    # yertle = Turtle()
+    # yertle.ht()
+    # yertle.penup()
+    # yertle.goto(-125, -25)
+    # yertle.color("red")
+    # yertle.speed(0)
+    # yertle.write("You died", font=("Arial", 50, "normal"))
 
 screen.exitonclick()
