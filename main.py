@@ -32,7 +32,6 @@ class Player(Turtle):
         self.score = 0
         self.alive = is_alive
         self.st()
-        self.player_score = 0
         screen.onkeypress(self.turn_left, left_key)
         screen.onkeypress(self.turn_right, right_key)
         screen.onkeypress(self.fire, fire_key)
@@ -60,6 +59,7 @@ class Block(Turtle):
         self.health = 3
         self.goto(x, y)
         self.st()
+        self.setheading(-90)
     
     def hit(self):
         self.health -= 1
@@ -87,18 +87,16 @@ class Bomb(Turtle):
         self.shape("square")
         self.health = 1
         self.st()
+        self.setheading(-90)
 
     def hit(self):
         self.health -= 1
-        to_remove = []
-        for block in grid:
-            if (block != self) and (self.distance(block) < 35):
-                to_remove.append(block)
-        for block in to_remove:
-            block.remove()
-#for each block the bomb explodes, add 1 to player score, plus the actual bomb
-        self.remove()
-    
+        if self.health <= 0:
+            to_remove = []
+            for block in grid:
+                if (block != self) and (self.distance(block) < 35):
+                    to_remove.append(block)
+
     def remove(self):
         global grid
         if self in grid:
@@ -128,59 +126,77 @@ class Bullet(Turtle):
             self.die()
 
     def die(self):
+        self.ht()
         if self in self.player.bullets:
-            self.ht()
             self.player.bullets.remove(self)
 
 
 class Score(Turtle):
     def __init__(self, player, player_color):
         super().__init__()
+        self.player = player
         self.ht()
         self.penup()
         if player_color == "light blue":
-            self.goto(300, 0)
+            self.goto(-250, 0)
         if player_color == "dark blue":
-            self.goto(-300, 0)
+            self.goto(175, 0)
         self.color(player_color)
-        yertle.speed(0)
-        yertle.write(f"{str(player_score)}", font=("Arial", 15, "normal"))
+        self.speed(0)
+        self.refresh()
+
+    def refresh(self):
+        self.clear()
+        self.write(f"Score: {self.player.score}", font=("Arial", 15, "normal"))
 
 
 
 def update():
-    global p1, p2, grid
+    global p1, p2, grid, new_game, start
 
-    start = time.time()
+    if new_game:
+        start = time.time()
+        new_game = False
 
     if time.time()-start > 2:
         start = time.time()
+        screen.tracer(0)
+        for block in grid:
+            block.forward(20)
+        for x in range(-140, 150, 20): #x-axis
+            if random.randint(1, 10) > 8:
+                grid.append(Bomb(x, 190))
+            elif len(grid)%4==0:
+                grid.append(Block(x, 190, "pink"))
+            elif len(grid)%4==1:
+                grid.append(Block(x, 190, "yellow"))
+            elif len(grid)%4==2:
+                grid.append(Block(x, 190, "light green"))
+            elif len(grid)%4==3:
+                grid.append(Block(x, 190, "aqua"))
+        screen.tracer(1)
 
     for bullet in p1.bullets:
         bullet.move()
         for block in grid:
-            if bullet.distance(block) < 20 and block.color != "black":
+            if bullet.distance(block) < 20:
                 block.hit()
                 if block.health == 0:
                     block.remove()
-                    p1.player_score += 1
+                    p1.score += 1
+                    p1_score_board.refresh()
                 bullet.die()
-            if block.color == "black" and bullet.distance(block) < 20:
-                block.hit()
 
     for bullet in p2.bullets:
         bullet.move()
         for block in grid:
-            if bullet.distance(block) < 20 and block.color != "black":
+            if bullet.distance(block) < 20:
                 block.hit()
                 if block.health == 0:
                     block.remove()
-                    p2.player_score += 1
+                    p2.score += 1
+                    p2_score_board.refresh()
                 bullet.die()
-            if block.color == "black" and bullet.distance(block) < 20:
-                block.hit()
-
-    p1.Score()
 
     screen.ontimer(update, 120)
 
@@ -189,14 +205,28 @@ screen = Screen()
 screen.bgcolor("purple")
 screen.setup(600,600)
 screen.listen()
+new_game = True
 
 screen.onkey(update, "space")
 
 playing_area()
 
+# "press space to start"
+# yertle = Turtle()
+# yertle.ht()
+# yertle.penup()
+# yertle.goto(-149, -25)
+# yertle.color("green")
+# yertle.speed(0)
+# yertle.write("Press 'space' to start", font=("Arial", 25, "normal"))
+
+
 p1 = Player(-75, -150, "light blue", "light blue", screen, "d", "a", "w", True)
 p2 = Player(75, -150, "dark blue", "dark blue", screen, "l", "j", "i", True)
 grid = []
+
+p1_score_board = Score(p1, "light blue")
+p2_score_board = Score(p2, "dark blue")
 
 screen.tracer(0)
 
@@ -217,25 +247,15 @@ for y in range(190, 140, -20): #y-axis
 screen.tracer(1)
 
 screen.update()
-    
-#"press space to start"
-# yertle = Turtle()
-# yertle.ht()
-# yertle.penup()
-# yertle.goto(-125, -25)
-# yertle.color("green")
-# yertle.speed(0)
-# yertle.write("Press", font=("Arial", 50, "normal"))
-
 
 #death
-
-    # yertle = Turtle()
-    # yertle.ht()
-    # yertle.penup()
-    # yertle.goto(-125, -25)
-    # yertle.color("red")
-    # yertle.speed(0)
-    # yertle.write("You died", font=("Arial", 50, "normal"))
+if p1.alive == False or p2.alive == False:
+    yertle = Turtle()
+    yertle.ht()
+    yertle.penup()
+    yertle.goto(-125, -25)
+    yertle.color("red")
+    yertle.speed(0)
+    yertle.write("You died", font=("Arial", 50, "normal"))
 
 screen.exitonclick()
