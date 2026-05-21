@@ -32,6 +32,7 @@ class Player(Turtle):
         self.score = 0
         self.alive = is_alive
         self.st()
+        self.player_score = 0
         screen.onkeypress(self.turn_left, left_key)
         screen.onkeypress(self.turn_right, right_key)
         screen.onkeypress(self.fire, fire_key)
@@ -43,7 +44,7 @@ class Player(Turtle):
                 bullet.move()
 
     def turn_left(self):
-        self.left(10)
+        self.left(5)
 
     def turn_right(self):
         self.right(10)
@@ -88,12 +89,14 @@ class Bomb(Turtle):
         self.st()
 
     def hit(self):
+        self.health -= 1
         to_remove = []
         for block in grid:
-            if (block != self) and (self.distance(block) < 25):
+            if (block != self) and (self.distance(block) < 35):
                 to_remove.append(block)
         for block in to_remove:
             block.remove()
+#for each block the bomb explodes, add 1 to player score, plus the actual bomb
         self.remove()
     
     def remove(self):
@@ -156,11 +159,11 @@ def update():
     for bullet in p1.bullets:
         bullet.move()
         for block in grid:
-            #need to add bombs
             if bullet.distance(block) < 20 and block.color != "black":
                 block.hit()
                 if block.health == 0:
                     block.remove()
+                    p1.player_score += 1
                 bullet.die()
             if block.color == "black" and bullet.distance(block) < 20:
                 block.hit()
@@ -172,9 +175,12 @@ def update():
                 block.hit()
                 if block.health == 0:
                     block.remove()
+                    p2.player_score += 1
                 bullet.die()
             if block.color == "black" and bullet.distance(block) < 20:
                 block.hit()
+
+    p1.Score()
 
     screen.ontimer(update, 120)
 
