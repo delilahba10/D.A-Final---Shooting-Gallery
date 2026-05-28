@@ -96,6 +96,8 @@ class Bomb(Turtle):
             for block in grid:
                 if (block != self) and (self.distance(block) < 35):
                     to_remove.append(block)
+            for block in to_remove:
+                block.remove()
 
     def remove(self):
         global grid
@@ -154,6 +156,22 @@ class Score(Turtle):
 def update():
     global p1, p2, grid, new_game, start
 
+    if p1.alive == False or p2.alive == False:
+        yertle = Turtle()
+        yertle.ht()
+        yertle.penup()
+        yertle.goto(-125, -25)
+        yertle.color("red")
+        yertle.speed(0)
+        yertle.write("You died", font=("Arial", 50, "normal"))
+        p1.ht()
+        p2.ht()
+        for bullet in p2.bullets:
+            bullet.ht()
+        for block in grid:
+            block.ht()
+        return
+
     if new_game:
         start = time.time()
         new_game = False
@@ -197,6 +215,13 @@ def update():
                     p2.score += 1
                     p2_score_board.refresh()
                 bullet.die()
+        
+    for block in grid:
+        if block.distance(p1) < 20:
+            p1.alive = False
+        if block.distance(p2) < 20:
+            p2.alive = False
+
 
     screen.ontimer(update, 120)
 
@@ -243,19 +268,7 @@ for y in range(190, 140, -20): #y-axis
         elif len(grid)%4==3:
             grid.append(Block(x, y, "aqua"))
 
-
-screen.tracer(1)
-
-screen.update()
-
-#death
-if p1.alive == False or p2.alive == False:
-    yertle = Turtle()
-    yertle.ht()
-    yertle.penup()
-    yertle.goto(-125, -25)
-    yertle.color("red")
-    yertle.speed(0)
-    yertle.write("You died", font=("Arial", 50, "normal"))
-
-screen.exitonclick()
+while p1.alive == True and p2.alive == True:
+    screen.tracer(1)
+    screen.update()
+    screen.exitonclick()
